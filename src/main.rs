@@ -6,27 +6,38 @@ use sha1::{Digest, Sha1};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufRead, BufReader, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{ffi::CStr, fs};
 
 // clap docs: https://docs.rs/clap/latest/clap/_derive/_tutorial/chapter_0/index.html
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize git repo in the current folder.
+    /// Initialize git repo in the current folder
     Init,
 
     /// Print internal git object file contents
     CatFile {
         /// pretty prints blob contents
-        #[arg(id = "pretty_print", short, long, value_name = "blob_sha")]
+        #[arg(
+            id = "pretty_print",
+            short,
+            long,
+            value_name = "blob_sha",
+            default_value_t = true
+        )]
+        pretty_print: bool,
+
         blob_sha: String,
     },
 
     /// Print internal git object file contents
     HashObject {
-        /// pretty prints blob contents
-        #[arg(id = "write", short, long, value_name = "filename")]
-        filename: String,
+        #[clap(short, long, default_value_t = false)]
+        /// Write computed object to disk
+        write: bool,
+
+        /// target file
+        filename: PathBuf,
     },
 }
 
@@ -103,7 +114,10 @@ fn main() -> Result<()> {
                 fs::write(".git/HEAD", "ref: refs/heads/main\n").unwrap();
                 println!("Initialized git directory")
             }
-            Commands::CatFile { blob_sha } => {
+            Commands::CatFile {
+                pretty_print,
+                blob_sha,
+            } => {
                 let blob_prefix = &blob_sha[0..2];
                 let blob_suffix = &blob_sha[2..];
 
@@ -120,7 +134,7 @@ fn main() -> Result<()> {
                 }
             }
 
-            Commands::HashObject { filename } => {
+            Commands::HashObject { write, filename } => {
                 let bytes = fs::read(filename).expect("Could not read file.");
 
                 let mut hasher = Sha1::new();
@@ -133,23 +147,26 @@ fn main() -> Result<()> {
                 let (prefix, filename) = hex_hash.split_at(2);
                 let mut path = String::from(format!(".git/objects/{}", prefix));
 
-                fs::create_dir_all(&path).expect("Failed to create objects dir.");
+                if write {
+                    fs::create_dir_all(&path).expect("Failed to create objects dir.");
 
-                let mut compressor = ZlibEncoder::new(Vec::new(), Default::default());
-                compressor
-                    .write_all(header.as_bytes())
-                    .expect("Failed to compress blob header.");
-                compressor
-                    .write_all(&bytes)
-                    .expect("Failed to compress blob content.");
+                    let mut compressor = ZlibEncoder::new(Vec::new(), Default::default());
+                    compressor
+                        .write_all(header.as_bytes())
+                        .expect("Failed to compress blob header.");
+                    compressor
+                        .write_all(&bytes)
+                        .expect("Failed to compress blob content.");
 
-                let compressed = compressor.finish().expect("Zlib compression failed.");
+                    let compressed = compressor.finish().expect("Zlib compression failed.");
 
-                path.push_str("/");
-                path.push_str(filename);
+                    path.push_str("/");
+                    path.push_str(filename);
 
-                // TODO: Switch to creating tmp file to write contents into and then renaming it instead (for perf).
-                fs::write(path, compressed.as_slice()).expect("Failed to write object to disk.");
+                    // TODO: Switch to creating tmp file to write contents into and then renaming it instead (for perf).
+                    fs::write(path, compressed.as_slice())
+                        .expect("Failed to write object to disk.");
+                }
 
                 println!("{}", hex_hash);
             }
