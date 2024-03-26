@@ -15,7 +15,7 @@ pub fn hash_object(filename: &PathBuf, write: bool) {
     let hex_hash = hex::encode(sha1);
 
     let (prefix, filename) = hex_hash.split_at(2);
-    let mut path = String::from(format!(".git/objects/{}", prefix));
+    let mut path = format!(".git/objects/{}", prefix);
 
     if write {
         fs::create_dir_all(&path).expect("Failed to create objects dir.");
@@ -30,7 +30,7 @@ pub fn hash_object(filename: &PathBuf, write: bool) {
 
         let compressed = compressor.finish().expect("Zlib compression failed.");
 
-        path.push_str("/");
+        path.push('/');
         path.push_str(filename);
 
         // TODO: Switch to creating tmp file to write contents into and then renaming it instead (for perf).

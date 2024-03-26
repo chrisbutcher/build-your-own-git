@@ -13,7 +13,7 @@ pub fn cat_file(blob_sha: &str) -> anyhow::Result<()> {
     let raw_path = format!(".git/objects/{}/{}", prefix, filename);
     let file_path = Path::new(&raw_path);
 
-    let loaded_blob = read_object_from_file(&file_path)?;
+    let loaded_blob = read_object_from_file(file_path)?;
 
     match loaded_blob {
         Object::Blob(blob) => {
@@ -42,7 +42,7 @@ fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
     let header_str = header_c_str
         .to_str()
         .context("Failed to convert cstr to str")?;
-    let Some((kind, size)) = header_str.split_once(" ") else {
+    let Some((kind, size)) = header_str.split_once(' ') else {
         anyhow::bail!("Header was malformed");
     };
 
@@ -57,7 +57,7 @@ fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
 
     let result = match kind {
         "blob" => Object::Blob(Blob {
-            size: size,
+            size,
             contents: str,
         }),
         _ => anyhow::bail!("object kind ({}) not supported", kind),
