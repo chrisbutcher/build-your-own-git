@@ -4,6 +4,8 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::{fs, io};
 
+use crate::objects;
+
 struct HashedWriter<W> {
     writer: W,
     hasher: Sha1,
@@ -52,20 +54,16 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
 
         let compressed_tmp_file = tempfile::NamedTempFile::new()?;
 
-        let (prefix, filename) = hex_hash.split_at(2);
-        let mut path = format!(".git/objects/{}", prefix);
+        let (dir_path, file_path) = objects::paths_from_sha(&hex_hash);
 
-        fs::create_dir_all(&path).expect("Failed to create objects dir.");
+        fs::create_dir_all(&dir_path).expect("Failed to create objects dir.");
 
         let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
         std::io::copy(&mut uncompressed_temp_file_reopened, &mut compressor)?;
 
         compressor.finish().expect("Zlib compression failed.");
 
-        path.push('/');
-        path.push_str(filename);
-
-        compressed_tmp_file.persist(path)?;
+        compressed_tmp_file.persist(file_path)?;
     }
 
     Ok(())

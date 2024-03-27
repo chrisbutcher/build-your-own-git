@@ -6,6 +6,7 @@ mod commands;
 use crate::commands::cat_file::*;
 use crate::commands::hash_object::*;
 use crate::commands::init::*;
+pub mod objects;
 
 // clap docs: https://docs.rs/clap/latest/clap/_derive/_tutorial/chapter_0/index.html
 #[derive(Subcommand)]
@@ -98,6 +99,8 @@ fn main() -> Result<()> {
                 tree_sha,
             } => {
                 println!("hi");
+
+                // objects::read_object_from_file(file_path)
             }
         }
     }
