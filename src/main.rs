@@ -57,14 +57,37 @@ struct Cli {
     command: Option<Commands>,
 }
 
+#[derive(Debug)]
 pub struct Blob {
     #[allow(dead_code)]
     size: usize,
     contents: String,
 }
 
+#[derive(Debug)]
+pub enum TreeEntryMode {
+    RegularFile,
+    ExecutableFile,
+    SymbolicLink,
+    Directory,
+}
+
+#[derive(Debug)]
+pub struct TreeEntry {
+    mode: TreeEntryMode,
+    name: String,
+    object_sha: String,
+}
+
+#[derive(Debug)]
+pub struct Tree {
+    entries: Vec<TreeEntry>,
+}
+
+#[derive(Debug)]
 pub enum Object {
     Blob(Blob),
+    Tree(Tree),
 }
 
 fn main() -> Result<()> {
@@ -98,9 +121,21 @@ fn main() -> Result<()> {
                 name_only,
                 tree_sha,
             } => {
-                println!("hi");
+                // TODO: Handle non-name_only output formatting (with spacing, tabs etc.)
 
-                // objects::read_object_from_file(file_path)
+                let (dir_path, file_path) = objects::paths_from_sha(&tree_sha);
+
+                let obj = objects::read_object_from_file(&file_path)?;
+
+                match obj {
+                    Object::Tree(tree) => {
+                        for entry in &tree.entries {
+                            // TODO: stdout locking
+                            println!("{}", entry.name);
+                        }
+                    }
+                    _ => todo!("ls-tree unhandled object type"),
+                }
             }
         }
     }

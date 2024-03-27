@@ -13,6 +13,10 @@ pub fn cat_file(blob_sha: &str) -> anyhow::Result<()> {
             let stdout = std::io::stdout();
             stdout.lock().write_all(blob.contents.as_bytes())?;
         }
+
+        Object::Tree(tree) => {
+            todo!("TODO cat-file support for trees");
+        }
     };
 
     Ok(())
