@@ -131,7 +131,19 @@ fn main() -> Result<()> {
                     Object::Tree(tree) => {
                         for entry in &tree.entries {
                             // TODO: stdout locking
-                            println!("{}", entry.name);
+                            // let stdout = std::io::stdout();
+
+                            if name_only {
+                                println!("{}", entry.name);
+                            } else {
+                                let (mode, kind) = match &entry.mode {
+                                    TreeEntryMode::RegularFile => ("100644", "blob"),
+                                    TreeEntryMode::Directory => ("040000", "tree"),
+                                    _ => todo!("printing not supported yet for mode"),
+                                };
+
+                                println!("{} {} {}\t{}", mode, kind, entry.object_sha, entry.name);
+                            }
                         }
                     }
                     _ => todo!("ls-tree unhandled object type"),
