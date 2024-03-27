@@ -68,6 +68,8 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
         compressed_tmp_file.persist(file_path)?;
     }
 
+    // TODO: Delete any unused tmp files.
+
     println!("{}", hex_hash);
 
     Ok(())
