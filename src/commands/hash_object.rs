@@ -46,25 +46,29 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
 
     let hash_bytes = hash_writer.hasher.finalize();
     let hex_hash = hex::encode(hash_bytes);
-    println!("{}", hex_hash);
 
+    // TODO: Extract below into private function
     if write {
+        let (dir_path, file_path) = objects::paths_from_sha(&hex_hash);
+
+        // Source
         let mut uncompressed_temp_file_reopened =
             fs::File::open(uncompressed_temp_file_path).expect("could not re-open temp file");
 
+        // Destination
         let compressed_tmp_file = tempfile::NamedTempFile::new()?;
 
-        let (dir_path, file_path) = objects::paths_from_sha(&hex_hash);
-
-        fs::create_dir_all(&dir_path).expect("Failed to create objects dir.");
+        fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
 
         let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
         std::io::copy(&mut uncompressed_temp_file_reopened, &mut compressor)?;
-
         compressor.finish().expect("Zlib compression failed.");
 
+        // Atomically replace file in object store with tmp file once it's fully written.
         compressed_tmp_file.persist(file_path)?;
     }
+
+    println!("{}", hex_hash);
 
     Ok(())
 }

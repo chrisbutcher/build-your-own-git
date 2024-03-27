@@ -1,6 +1,5 @@
 use crate::Object;
 use std::io::prelude::*;
-use std::path::Path;
 
 use crate::objects;
 
