@@ -80,7 +80,7 @@ fn main() -> Result<()> {
             }
 
             Commands::HashObject { write, filename } => {
-                hash_object(&filename, write);
+                hash_object(&filename, write)?;
             }
         }
     }
