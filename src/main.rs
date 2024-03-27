@@ -37,6 +37,16 @@ enum Commands {
         /// target file
         filename: PathBuf,
     },
+
+    /// TODO
+    LsTree {
+        #[clap(short, long, default_value_t = false)]
+        /// TODO
+        name_only: bool,
+
+        /// target file
+        tree_sha: String,
+    },
 }
 
 #[derive(Parser)]
@@ -81,6 +91,13 @@ fn main() -> Result<()> {
 
             Commands::HashObject { write, filename } => {
                 hash_object(&filename, write)?;
+            }
+
+            Commands::LsTree {
+                name_only,
+                tree_sha,
+            } => {
+                println!("hi");
             }
         }
     }
