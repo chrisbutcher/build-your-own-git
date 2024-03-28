@@ -1,13 +1,13 @@
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
-use std::io::stdout;
-use std::io::Write;
+use commands::ls_tree;
 use std::path::PathBuf;
 
 mod commands;
-use crate::commands::cat_file::*;
-use crate::commands::hash_object::*;
-use crate::commands::init::*;
+use crate::commands::*;
+// use crate::commands::hash_object::*;
+// use crate::commands::init::*;
+// use crate::commands::ls_tree::*;
 pub mod objects;
 
 // clap docs: https://docs.rs/clap/latest/clap/_derive/_tutorial/chapter_0/index.html
@@ -102,7 +102,7 @@ fn main() -> Result<()> {
     if let Some(commands) = cli.command {
         match commands {
             Commands::Init => {
-                init_repo()?;
+                init::init()?;
             }
             Commands::CatFile {
                 pretty_print,
@@ -112,46 +112,18 @@ fn main() -> Result<()> {
                     bail!("Pretty print flag required (for this exercise).")
                 }
 
-                cat_file(&blob_sha)?;
+                cat_file::cat_file(&blob_sha)?;
             }
 
             Commands::HashObject { write, filename } => {
-                hash_object(&filename, write)?;
+                hash_object::hash_object(&filename, write)?;
             }
 
             Commands::LsTree {
                 name_only,
                 tree_sha,
             } => {
-                let (_dir_path, file_path) = objects::paths_from_sha(&tree_sha);
-
-                let obj = objects::read_object_from_file(&file_path)?;
-
-                match obj {
-                    Object::Tree(tree) => {
-                        let mut out = stdout().lock();
-
-                        for entry in &tree.entries {
-                            if name_only {
-                                writeln!(out, "{}", entry.name).unwrap();
-                            } else {
-                                let (mode, kind) = match &entry.mode {
-                                    TreeEntryMode::RegularFile => ("100644", "blob"),
-                                    TreeEntryMode::Directory => ("040000", "tree"),
-                                    _ => todo!("printing not supported yet for mode"),
-                                };
-
-                                writeln!(
-                                    out,
-                                    "{} {} {}\t{}",
-                                    mode, kind, entry.object_sha, entry.name
-                                )
-                                .unwrap();
-                            }
-                        }
-                    }
-                    _ => todo!("ls-tree unhandled object type"),
-                }
+                ls_tree::ls_tree(&tree_sha, name_only)?;
             }
         }
     }

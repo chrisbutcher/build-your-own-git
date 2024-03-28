@@ -1,6 +1,6 @@
 use std::fs;
 
-pub fn init_repo() -> anyhow::Result<()> {
+pub fn init() -> anyhow::Result<()> {
     // TODO: Handle files already existing:
     // file:///Users/chris/.rustup/toolchains/stable-aarch64-apple-darwin/share/doc/rust/html/std/io/enum.ErrorKind.html
 
