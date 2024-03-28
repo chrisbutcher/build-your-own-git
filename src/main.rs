@@ -2,12 +2,8 @@ use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use commands::ls_tree;
 use std::path::PathBuf;
-
 mod commands;
 use crate::commands::*;
-// use crate::commands::hash_object::*;
-// use crate::commands::init::*;
-// use crate::commands::ls_tree::*;
 pub mod objects;
 
 // clap docs: https://docs.rs/clap/latest/clap/_derive/_tutorial/chapter_0/index.html

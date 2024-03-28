@@ -1,15 +1,13 @@
-use crate::{Blob, Object, Tree};
-use crate::{TreeEntry, TreeEntryMode};
+use crate::{Blob, Object, Tree, TreeEntry, TreeEntryMode};
 use anyhow::Context;
 use bytes::Buf;
 use flate2::bufread::ZlibDecoder;
-use std::ffi::CStr;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::io::Cursor;
-use std::path::Path;
-use std::path::PathBuf;
+use std::{
+    ffi::CStr,
+    fs::File,
+    io::{prelude::*, BufReader, Cursor},
+    path::{Path, PathBuf},
+};
 
 pub fn paths_from_sha(object_sha: &str) -> (PathBuf, PathBuf) {
     let (prefix, filename) = object_sha.split_at(2);

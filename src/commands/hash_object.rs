@@ -1,8 +1,6 @@
 use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
-use std::io::prelude::*;
-use std::path::PathBuf;
-use std::{fs, io};
+use std::{fs, io, io::prelude::*, path::PathBuf};
 
 use crate::objects;
 
