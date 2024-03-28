@@ -25,8 +25,10 @@ where
     }
 }
 
-pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
+pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<String> {
     let hasher = Sha1::new();
+
+    eprintln!("opening file: {:?}", &filename);
 
     let mut input_file = fs::File::open(filename)?;
 
@@ -43,17 +45,15 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
     std::io::copy(&mut input_file, &mut hash_writer)?;
 
     let hash_bytes = hash_writer.hasher.finalize();
-    let hex_hash = hex::encode(hash_bytes);
+    let object_hash = hex::encode(hash_bytes);
 
     if write {
-        write_object(&hex_hash, &uncompressed_temp_file_path.to_path_buf())?;
+        write_object(&object_hash, &uncompressed_temp_file_path.to_path_buf())?;
     }
 
     fs::remove_file(uncompressed_temp_file_path)?;
 
-    println!("{}", hex_hash);
-
-    Ok(())
+    Ok(object_hash)
 }
 
 fn write_object(new_file_hash: &str, source_file_path: &PathBuf) -> anyhow::Result<()> {

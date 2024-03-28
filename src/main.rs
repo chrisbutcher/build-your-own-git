@@ -2,9 +2,7 @@ use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use commands::ls_tree;
 use std::path::PathBuf;
-use walkdir::WalkDir;
 mod commands;
-use std::env;
 
 use crate::commands::*;
 pub mod objects;
@@ -117,7 +115,9 @@ fn main() -> Result<()> {
             }
 
             Commands::HashObject { write, filename } => {
-                hash_object::hash_object(&filename, write)?;
+                let object_hash = hash_object::hash_object(&filename, write)?;
+
+                println!("{}", object_hash);
             }
 
             Commands::LsTree {
@@ -128,50 +128,10 @@ fn main() -> Result<()> {
             }
 
             Commands::WriteTree => {
-                let path = env::current_dir()?;
-                println!("The current directory is {}", path.display());
-
-                let tree_entries = recurse_path(&path);
+                write_tree::write_tree()?;
             }
         }
     }
 
     Ok(())
-}
-
-fn recurse_path(path: &PathBuf) {
-    let path_str = path.to_str().unwrap();
-
-    let walker = WalkDir::new(&path)
-        .follow_links(false)
-        .max_depth(1)
-        .into_iter();
-    for entry in walker.filter_entry(|e| !is_hidden(e)) {
-        let entry = entry.unwrap();
-
-        let p = entry.path().display().to_string();
-
-        if entry.path() != path {
-            println!("{}", p);
-            println!("is_dir: {}", entry.file_type().is_dir());
-
-            if entry.file_type().is_dir() {
-                let pb = entry.path().to_path_buf();
-
-                recurse_path(&pb);
-            }
-
-            let path_with_trailing_slash = format!("{}/", path_str);
-            let relative_path = p.replace(&path_with_trailing_slash, "");
-
-            println!("relative_path: {}", relative_path);
-        }
-    }
-}
-fn is_hidden(entry: &walkdir::DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.starts_with("."))
-        .unwrap_or(false)
 }
