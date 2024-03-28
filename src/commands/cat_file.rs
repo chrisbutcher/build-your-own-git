@@ -14,7 +14,7 @@ pub fn cat_file(blob_sha: &str) -> anyhow::Result<()> {
             stdout.lock().write_all(blob.contents.as_bytes())?;
         }
 
-        Object::Tree(tree) => {
+        Object::Tree(_tree) => {
             todo!("cat-file support for trees");
         }
     };

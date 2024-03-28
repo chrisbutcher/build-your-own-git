@@ -67,17 +67,17 @@ pub fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
             let mut entries = Vec::new();
 
             loop {
-                let mut tree_line_buf = Vec::new();
+                let mut tree_entry_buf = Vec::new();
 
-                c.read_until(0x0, &mut tree_line_buf)?;
+                c.read_until(0x0, &mut tree_entry_buf)?;
 
-                let tree_line_cstr = CStr::from_bytes_with_nul(&tree_line_buf)
+                let tree_entry_cstr = CStr::from_bytes_with_nul(&tree_entry_buf)
                     .context("Failed to read header as cstr")?;
-                let tree_line_str = tree_line_cstr
+                let tree_entry_str = tree_entry_cstr
                     .to_str()
                     .context("Failed to convert cstr to str")?;
 
-                let Some((raw_mode, filename)) = tree_line_str.split_once(' ') else {
+                let Some((raw_mode, name)) = tree_entry_str.split_once(' ') else {
                     anyhow::bail!("tree entry was malformed");
                 };
 
@@ -90,14 +90,14 @@ pub fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
                 };
 
                 // Read 20-byte sha hash from buffer wrapped in cursor `c``.
-                let mut tree_line_sha_buf = [0; 20];
-                c.read_exact(&mut tree_line_sha_buf)?;
-                let tree_line_hash = hex::encode(tree_line_sha_buf);
+                let mut tree_entry_sha_buf = [0; 20];
+                c.read_exact(&mut tree_entry_sha_buf)?;
+                let tree_entry_hash = hex::encode(tree_entry_sha_buf);
 
                 let new_entry = TreeEntry {
-                    mode: mode,
-                    name: filename.to_string(),
-                    object_sha: tree_line_hash,
+                    mode,
+                    name: name.to_string(),
+                    object_sha: tree_entry_hash,
                 };
 
                 entries.push(new_entry);

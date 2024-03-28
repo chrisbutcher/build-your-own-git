@@ -59,7 +59,7 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
 }
 
 fn write_object(new_file_hash: &str, source_file_path: &PathBuf) -> anyhow::Result<()> {
-    let (dir_path, file_path) = objects::paths_from_sha(&new_file_hash);
+    let (dir_path, file_path) = objects::paths_from_sha(new_file_hash);
 
     // Source
     let mut uncompressed_temp_file_reopened =

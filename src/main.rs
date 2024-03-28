@@ -102,7 +102,7 @@ fn main() -> Result<()> {
     if let Some(commands) = cli.command {
         match commands {
             Commands::Init => {
-                init_repo();
+                init_repo()?;
             }
             Commands::CatFile {
                 pretty_print,

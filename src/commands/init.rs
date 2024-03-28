@@ -1,4 +1,4 @@
-use std::{fs, io::stdout, io::Write};
+use std::fs;
 
 pub fn init_repo() -> anyhow::Result<()> {
     // TODO: Handle files already existing:
