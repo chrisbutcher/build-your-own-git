@@ -47,30 +47,37 @@ pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<()> {
     let hash_bytes = hash_writer.hasher.finalize();
     let hex_hash = hex::encode(hash_bytes);
 
-    // TODO: Extract below into private function
     if write {
-        let (dir_path, file_path) = objects::paths_from_sha(&hex_hash);
-
-        // Source
-        let mut uncompressed_temp_file_reopened =
-            fs::File::open(uncompressed_temp_file_path).expect("could not re-open temp file");
-
-        // Destination
-        let compressed_tmp_file = tempfile::NamedTempFile::new()?;
-
-        fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
-
-        let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
-        std::io::copy(&mut uncompressed_temp_file_reopened, &mut compressor)?;
-        compressor.finish().expect("Zlib compression failed.");
-
-        // Atomically replace file in object store with tmp file once it's fully written.
-        compressed_tmp_file.persist(file_path)?;
+        write_object(&hex_hash, &uncompressed_temp_file_path.to_path_buf())?;
     }
 
-    // TODO: Delete any unused tmp files.
+    fs::remove_file(uncompressed_temp_file_path)?;
 
     println!("{}", hex_hash);
+
+    Ok(())
+}
+
+fn write_object(new_file_hash: &str, source_file_path: &PathBuf) -> anyhow::Result<()> {
+    let (dir_path, file_path) = objects::paths_from_sha(&new_file_hash);
+
+    // Source
+    let mut uncompressed_temp_file_reopened =
+        fs::File::open(source_file_path).expect("could not re-open temp file");
+
+    // Destination
+    let compressed_tmp_file = tempfile::NamedTempFile::new()?;
+
+    fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
+
+    let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
+    std::io::copy(&mut uncompressed_temp_file_reopened, &mut compressor)?;
+    compressor.finish().expect("Zlib compression failed.");
+
+    // Atomically replace file in object store with tmp file once it's fully written.
+    compressed_tmp_file.persist(file_path)?;
+
+    drop(uncompressed_temp_file_reopened);
 
     Ok(())
 }

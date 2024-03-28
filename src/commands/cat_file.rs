@@ -15,7 +15,7 @@ pub fn cat_file(blob_sha: &str) -> anyhow::Result<()> {
         }
 
         Object::Tree(tree) => {
-            todo!("TODO cat-file support for trees");
+            todo!("cat-file support for trees");
         }
     };
 
