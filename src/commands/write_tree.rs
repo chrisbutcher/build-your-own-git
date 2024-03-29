@@ -4,7 +4,7 @@ use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{
     env,
-    ffi::{CStr, CString},
+    ffi::CStr,
     fs,
     io::{self, BufReader, Cursor, Seek, Write},
     path::PathBuf,
@@ -79,13 +79,16 @@ fn build_tree_entry(path: &PathBuf) -> anyhow::Result<TreeEntry> {
             _ => todo!("writing files of this mode not supported"),
         };
 
-        // TODO: Build CStr instead of UTF-8 string
-        let entry_str = format!("{} {}\0{}", mode, tree_entry.name, tree_entry.object_sha);
-        let entry_cstr = CString::new(entry_str)?;
-
-        let mut entry_bytes = entry_cstr.as_bytes_with_nul();
-
-        io::copy(&mut entry_bytes, &mut entries_bytes)?;
+        eprintln!("blarp");
+        // Write SHA as 20 byte sequence
+        let mut object_sha_bytes = [0; 20];
+        hex::decode_to_slice(&tree_entry.object_sha, &mut object_sha_bytes)?;
+        eprintln!("blarp 1");
+        let mut object_sha_bytes_cursor = Cursor::new(object_sha_bytes);
+        eprintln!("blarp 2");
+        write!(&mut entries_bytes, "{} {}\0", mode, tree_entry.name)?;
+        io::copy(&mut object_sha_bytes_cursor, &mut entries_bytes)?;
+        eprintln!("bleep");
     }
 
     let tree_bytes = Vec::new();
@@ -95,15 +98,9 @@ fn build_tree_entry(path: &PathBuf) -> anyhow::Result<TreeEntry> {
         writer: tree_bytes,
     };
 
+    eprintln!("bloop");
     // TODO: Build CStr instead of UTF-8 string
-    // write!(&mut hashed_writer, "tree {}\0", entries_bytes.len())?;
-
-    let tree_str = format!("tree {}\0", entries_bytes.len());
-
-    let tree_cstr = CString::new(tree_str)?;
-    let mut tree_bytes = tree_cstr.as_bytes_with_nul();
-
-    io::copy(&mut tree_bytes, &mut hashed_writer)?;
+    write!(&mut hashed_writer, "tree {}\0", entries_bytes.len())?;
 
     let mut c = Cursor::new(entries_bytes);
 
