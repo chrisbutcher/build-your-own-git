@@ -3,15 +3,13 @@ use sha1::{Digest, Sha1};
 use std::{
     fs,
     io::{self, prelude::*, Bytes},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::{objects, HashedWriter};
 
-pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<String> {
+pub fn hash_object(filename: &Path, write: bool) -> anyhow::Result<String> {
     let hasher = Sha1::new();
-
-    eprintln!("opening file: {:?}", &filename);
 
     let mut input_file = fs::File::open(filename)?;
 
