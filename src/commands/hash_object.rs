@@ -2,7 +2,7 @@ use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{
     fs,
-    io::{self, prelude::*, Bytes},
+    io::prelude::*,
     path::{Path, PathBuf},
 };
 
@@ -27,8 +27,6 @@ pub fn hash_object(filename: &Path, write: bool) -> anyhow::Result<String> {
 
     let hash_bytes = hash_writer.hasher.finalize();
     let object_hash = hex::encode(hash_bytes);
-
-    let hash_bytes_vec: Vec<u8> = hash_bytes.iter().cloned().collect();
 
     if write {
         write_object(&object_hash, &uncompressed_temp_file_path.to_path_buf())?;

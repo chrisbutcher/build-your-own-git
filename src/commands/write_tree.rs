@@ -3,11 +3,9 @@ use bytes::Buf;
 use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{
-    env,
-    ffi::CStr,
-    fs,
-    io::{self, BufReader, Cursor, Seek, Write},
-    path::{Path, PathBuf},
+    env, fs,
+    io::{self, Cursor, Write},
+    path::Path,
 };
 use walkdir::WalkDir;
 
@@ -15,13 +13,12 @@ use crate::{commands, HashedWriter, TreeEntry};
 
 pub fn write_tree() -> anyhow::Result<TreeEntry> {
     let path = env::current_dir()?;
-    let tree_entry = build_tree_entry(&path);
 
-    tree_entry
+    build_tree_entry(&path)
 }
 
 fn build_tree_entry(path: &Path) -> anyhow::Result<TreeEntry> {
-    let walker = WalkDir::new(&path)
+    let walker = WalkDir::new(path)
         .follow_links(false)
         .max_depth(1)
         .into_iter();
@@ -38,10 +35,10 @@ fn build_tree_entry(path: &Path) -> anyhow::Result<TreeEntry> {
         let relative_path = fs_entry.path().file_name().unwrap();
 
         if fs_entry.file_type().is_dir() {
-            let tree_entry = build_tree_entry(&fs_entry.path())?;
+            let tree_entry = build_tree_entry(fs_entry.path())?;
             tree_entries.push(tree_entry);
         } else {
-            let object_hash = commands::hash_object::hash_object(&fs_entry.path(), true)?;
+            let object_hash = commands::hash_object::hash_object(fs_entry.path(), true)?;
 
             tree_entries.push(TreeEntry {
                 mode: crate::TreeEntryMode::RegularFile,
@@ -113,6 +110,6 @@ fn is_hidden(entry: &walkdir::DirEntry) -> bool {
     entry
         .file_name()
         .to_str()
-        .map(|s| s.starts_with("."))
+        .map(|s| s.starts_with('.'))
         .unwrap_or(false)
 }

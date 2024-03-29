@@ -3,9 +3,8 @@ use clap::{Parser, Subcommand};
 use commands::ls_tree;
 use std::path::PathBuf;
 
-use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
-use std::{fs, io, io::prelude::*};
+use std::{io, io::prelude::*};
 
 mod commands;
 
@@ -130,6 +129,7 @@ fn main() -> Result<()> {
             Commands::Init => {
                 init::init()?;
             }
+
             Commands::CatFile {
                 pretty_print,
                 blob_sha,
