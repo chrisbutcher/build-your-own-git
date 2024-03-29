@@ -126,6 +126,7 @@ fn main() -> Result<()> {
         match commands {
             Commands::Init => {
                 init::init()?;
+                println!("Initialized git directory");
             }
 
             Commands::CatFile {
@@ -136,7 +137,10 @@ fn main() -> Result<()> {
                     bail!("Pretty print flag required (for this exercise).")
                 }
 
-                cat_file::cat_file(&blob_sha)?;
+                let contents = cat_file::cat_file(&blob_sha)?;
+
+                let stdout = std::io::stdout();
+                stdout.lock().write_all(contents.as_bytes())?;
             }
 
             Commands::HashObject { write, filename } => {

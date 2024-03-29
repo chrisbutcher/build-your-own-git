@@ -9,7 +9,5 @@ pub fn init() -> anyhow::Result<()> {
     fs::create_dir(".git/refs")?;
     fs::write(".git/HEAD", "ref: refs/heads/main\n")?;
 
-    println!("Initialized git directory");
-
     Ok(())
 }
