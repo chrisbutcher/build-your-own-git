@@ -2,6 +2,11 @@ use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use commands::ls_tree;
 use std::path::PathBuf;
+
+use flate2::write::ZlibEncoder;
+use sha1::{Digest, Sha1};
+use std::{fs, io, io::prelude::*};
+
 mod commands;
 
 use crate::commands::*;
@@ -91,6 +96,27 @@ pub enum Object {
     Tree(Tree),
 }
 
+struct HashedWriter<W> {
+    writer: W,
+    hasher: Sha1,
+}
+
+impl<W> io::Write for HashedWriter<W>
+where
+    W: Write,
+{
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let n = self.writer.write(buf)?;
+        self.hasher.update(&buf[..n]);
+
+        Ok(n)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.writer.flush()
+    }
+}
+
 fn main() -> Result<()> {
     // let path = env::current_dir().unwrap();
     // println!("The current directory is {}", path.display());
@@ -128,7 +154,9 @@ fn main() -> Result<()> {
             }
 
             Commands::WriteTree => {
-                write_tree::write_tree()?;
+                let tree_entry = write_tree::write_tree()?;
+
+                println!("{}", tree_entry.object_sha);
             }
         }
     }

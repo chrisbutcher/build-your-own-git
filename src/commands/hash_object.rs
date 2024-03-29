@@ -2,28 +2,7 @@ use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{fs, io, io::prelude::*, path::PathBuf};
 
-use crate::objects;
-
-struct HashedWriter<W> {
-    writer: W,
-    hasher: Sha1,
-}
-
-impl<W> io::Write for HashedWriter<W>
-where
-    W: Write,
-{
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let n = self.writer.write(buf)?;
-        self.hasher.update(&buf[..n]);
-
-        Ok(n)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.writer.flush()
-    }
-}
+use crate::{objects, HashedWriter};
 
 pub fn hash_object(filename: &PathBuf, write: bool) -> anyhow::Result<String> {
     let hasher = Sha1::new();

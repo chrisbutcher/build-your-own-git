@@ -46,12 +46,12 @@ pub fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
         .parse::<usize>()
         .context("Failed to parse {size} as usize")?;
 
-    // Finish reading object contents as UTF-8
     let mut buf = Vec::new();
     decoded_reader.read_to_end(&mut buf)?;
 
     let result = match kind {
         "blob" => {
+            // Finish reading object contents as UTF-8
             let str = String::from_utf8(buf)?; // BUG when reading tree objects
 
             Object::Blob(Blob {

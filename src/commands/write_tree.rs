@@ -1,11 +1,21 @@
-use std::{env, path::PathBuf};
+use crate::objects;
+use bytes::Buf;
+use flate2::write::ZlibEncoder;
+use sha1::{Digest, Sha1};
+use std::{
+    env,
+    ffi::{CStr, CString},
+    fs,
+    io::{self, BufReader, Cursor, Seek, Write},
+    path::PathBuf,
+};
 use walkdir::WalkDir;
 
-use crate::{commands, TreeEntry};
+use crate::{commands, HashedWriter, TreeEntry};
 
 pub fn write_tree() -> anyhow::Result<TreeEntry> {
     let path = env::current_dir()?;
-    println!("The current directory is {}", path.display());
+    // println!("The current directory is {}", path.display());
 
     let tree_entry = build_tree_entry(&path);
 
@@ -38,11 +48,7 @@ fn build_tree_entry(path: &PathBuf) -> anyhow::Result<TreeEntry> {
 
         let path_buf = fs_entry.path().to_path_buf();
 
-        // println!("{}", path_string);
-
         if fs_entry.file_type().is_dir() {
-            println!("Recursing into directory: {:?}", path_buf);
-
             let tree_entry = build_tree_entry(&path_buf)?;
             tree_entries.push(tree_entry);
         } else {
@@ -62,21 +68,71 @@ fn build_tree_entry(path: &PathBuf) -> anyhow::Result<TreeEntry> {
     // 2. Write each entry line
     // 3. Produce SHA-1 hash of the bytes written in total, to return as this tree's tree sha.
 
-    println!("reporting all tree_entries::START:::");
+    tree_entries.sort_by(|a, b| a.name.partial_cmp(&b.name).unwrap());
+
+    let mut entries_bytes = Vec::new();
 
     for tree_entry in tree_entries.iter() {
-        println!(
-            "mode: {:?}, name: {:?}, object_sha: {:?}",
-            tree_entry.mode, tree_entry.name, tree_entry.object_sha
-        );
+        let mode = match tree_entry.mode {
+            crate::TreeEntryMode::RegularFile => "100644",
+            crate::TreeEntryMode::Directory => "040000",
+            _ => todo!("writing files of this mode not supported"),
+        };
+
+        // TODO: Build CStr instead of UTF-8 string
+        let entry_str = format!("{} {}\0{}", mode, tree_entry.name, tree_entry.object_sha);
+        let entry_cstr = CString::new(entry_str)?;
+
+        let mut entry_bytes = entry_cstr.as_bytes_with_nul();
+
+        io::copy(&mut entry_bytes, &mut entries_bytes)?;
     }
 
-    println!("reporting all tree_entries::END:::");
+    let tree_bytes = Vec::new();
+
+    let mut hashed_writer = HashedWriter {
+        hasher: Sha1::new(),
+        writer: tree_bytes,
+    };
+
+    // TODO: Build CStr instead of UTF-8 string
+    // write!(&mut hashed_writer, "tree {}\0", entries_bytes.len())?;
+
+    let tree_str = format!("tree {}\0", entries_bytes.len());
+
+    let tree_cstr = CString::new(tree_str)?;
+    let mut tree_bytes = tree_cstr.as_bytes_with_nul();
+
+    io::copy(&mut tree_bytes, &mut hashed_writer)?;
+
+    let mut c = Cursor::new(entries_bytes);
+
+    io::copy(&mut c, &mut hashed_writer)?;
+
+    let hash_bytes = hashed_writer.hasher.finalize();
+    let tree_hash = hex::encode(hash_bytes);
+
+    let (dir_path, file_path) = objects::paths_from_sha(&tree_hash);
+
+    fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
+
+    // Source
+    let mut reader_tree_bytes = hashed_writer.writer.reader();
+
+    // Destination
+    let compressed_tmp_file = tempfile::NamedTempFile::new()?;
+
+    let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
+    std::io::copy(&mut reader_tree_bytes, &mut compressor)?;
+    compressor.finish().expect("Zlib compression failed.");
+
+    // Atomically replace file in object store with tmp file once it's fully written.
+    compressed_tmp_file.persist(file_path)?;
 
     Ok(TreeEntry {
-        mode: crate::TreeEntryMode::RegularFile,
-        name: "foobar".to_string(),
-        object_sha: "abc".to_string(),
+        mode: crate::TreeEntryMode::Directory,
+        name: path.file_name().unwrap().to_str().unwrap().to_string(),
+        object_sha: tree_hash,
     })
 }
 
