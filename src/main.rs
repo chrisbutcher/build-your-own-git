@@ -121,6 +121,8 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
+    // TODO: Decide if/how I/O should be extracted from core logic in commands.
+
     // You can check the value provided by positional arguments, or option arguments
     if let Some(commands) = cli.command {
         match commands {
@@ -158,7 +160,6 @@ fn main() -> Result<()> {
 
             Commands::WriteTree => {
                 let tree_entry = write_tree::write_tree()?;
-
                 println!("{}", tree_entry.object_sha);
             }
         }
