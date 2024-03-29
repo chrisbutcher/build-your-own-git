@@ -1,14 +1,12 @@
 use crate::objects;
-use bytes::Buf;
-use sha1::{Digest, Sha1};
 use std::{
     env,
-    io::{self, Cursor, Write},
+    io::{Cursor, Write},
     path::Path,
 };
 use walkdir::WalkDir;
 
-use crate::{commands, HashedWriter, TreeEntry};
+use crate::{commands, TreeEntry};
 
 pub fn write_tree() -> anyhow::Result<TreeEntry> {
     let path = env::current_dir()?;

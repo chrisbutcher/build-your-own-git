@@ -1,11 +1,6 @@
-use sha1::{Digest, Sha1};
-use std::{
-    fs,
-    io::prelude::*,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 
-use crate::{objects, HashedWriter};
+use crate::objects;
 
 pub fn hash_object(filename: &Path, write: bool) -> anyhow::Result<String> {
     let mut input_file = fs::File::open(filename)?;

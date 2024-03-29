@@ -132,12 +132,13 @@ where
 
     write!(&mut hashed_writer, "{} {}\0", content_type, content_size)?;
 
-    // let mut c = Cursor::new(contents_bytes);
+    // Run bytes through hash function.
     io::copy(reader, &mut hashed_writer)?;
 
     let hash_bytes = hashed_writer.hasher.finalize();
     let hash_str = hex::encode(hash_bytes);
 
+    // Source
     let mut reader_bytes = hashed_writer.writer.reader();
 
     let (dir_path, file_path) = paths_from_sha(&hash_str);
