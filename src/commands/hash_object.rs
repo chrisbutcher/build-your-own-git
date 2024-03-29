@@ -1,4 +1,3 @@
-use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{
     fs,
@@ -44,19 +43,11 @@ fn write_object(new_file_hash: &str, source_file_path: &PathBuf) -> anyhow::Resu
     let mut uncompressed_temp_file_reopened =
         fs::File::open(source_file_path).expect("could not re-open temp file");
 
-    // Destination
-    let compressed_tmp_file = tempfile::NamedTempFile::new()?;
-
-    fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
-
-    let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
-    std::io::copy(&mut uncompressed_temp_file_reopened, &mut compressor)?;
-    compressor.finish().expect("Zlib compression failed.");
-
-    // Atomically replace file in object store with tmp file once it's fully written.
-    compressed_tmp_file.persist(file_path)?;
-
-    drop(uncompressed_temp_file_reopened);
+    objects::write_byte_reader_to_file(
+        &mut uncompressed_temp_file_reopened,
+        &dir_path,
+        &file_path,
+    )?;
 
     Ok(())
 }

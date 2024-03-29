@@ -1,9 +1,8 @@
 use crate::objects;
 use bytes::Buf;
-use flate2::write::ZlibEncoder;
 use sha1::{Digest, Sha1};
 use std::{
-    env, fs,
+    env,
     io::{self, Cursor, Write},
     path::Path,
 };
@@ -84,20 +83,11 @@ fn build_tree_entry(path: &Path) -> anyhow::Result<TreeEntry> {
     let tree_hash = hex::encode(hash_bytes);
 
     let (dir_path, file_path) = objects::paths_from_sha(&tree_hash);
-    fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
 
-    // Source
+    // // Source
     let mut reader_tree_bytes = hashed_writer.writer.reader();
 
-    // Destination
-    let compressed_tmp_file = tempfile::NamedTempFile::new()?;
-
-    let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
-    std::io::copy(&mut reader_tree_bytes, &mut compressor)?;
-    compressor.finish().expect("Zlib compression failed.");
-
-    // Atomically replace file in object store with tmp file once it's fully written.
-    compressed_tmp_file.persist(file_path)?;
+    objects::write_byte_reader_to_file(&mut reader_tree_bytes, &dir_path, &file_path)?;
 
     Ok(TreeEntry {
         mode: crate::TreeEntryMode::Directory,

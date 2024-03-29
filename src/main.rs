@@ -6,9 +6,8 @@ use std::path::PathBuf;
 use sha1::{Digest, Sha1};
 use std::{io, io::prelude::*};
 
-mod commands;
-
 use crate::commands::*;
+mod commands;
 pub mod objects;
 
 // clap docs: https://docs.rs/clap/latest/clap/_derive/_tutorial/chapter_0/index.html

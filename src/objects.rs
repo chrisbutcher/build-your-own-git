@@ -1,10 +1,10 @@
 use crate::{Blob, Object, Tree, TreeEntry, TreeEntryMode};
 use anyhow::Context;
 use bytes::Buf;
-use flate2::bufread::ZlibDecoder;
+use flate2::{bufread::ZlibDecoder, write::ZlibEncoder};
 use std::{
     ffi::CStr,
-    fs::File,
+    fs::{self, File},
     io::{prelude::*, BufReader, Cursor},
     path::{Path, PathBuf},
 };
@@ -111,4 +111,27 @@ pub fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
     };
 
     Ok(result)
+}
+
+pub fn write_byte_reader_to_file<R: ?Sized>(
+    reader: &mut R,
+    dir_path: &Path,
+    file_path: &Path,
+) -> anyhow::Result<File>
+where
+    R: Read,
+{
+    // Destination
+    let compressed_tmp_file = tempfile::NamedTempFile::new()?;
+
+    fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
+
+    let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
+    std::io::copy(reader, &mut compressor)?;
+    compressor.finish().expect("Zlib compression failed.");
+
+    // Atomically replace file in object store with tmp file once it's fully written.
+    let written_file = compressed_tmp_file.persist(file_path)?;
+
+    Ok(written_file)
 }
