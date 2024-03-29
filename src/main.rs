@@ -81,7 +81,6 @@ pub struct TreeEntry {
     mode: TreeEntryMode,
     name: String,
     object_sha: String,
-    // hash_bytes: Vec<u8>,
 }
 
 #[derive(Debug)]

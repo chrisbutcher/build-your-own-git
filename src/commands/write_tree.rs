@@ -68,26 +68,9 @@ fn build_tree_entry(path: &Path) -> anyhow::Result<TreeEntry> {
         contents_bytes.extend(hex::decode(&tree_entry.object_sha)?);
     }
 
-    let tree_bytes = Vec::new();
-    let mut hashed_writer = HashedWriter {
-        hasher: Sha1::new(),
-        writer: tree_bytes,
-    };
-
-    write!(&mut hashed_writer, "tree {}\0", contents_bytes.len())?;
-
+    let content_size = contents_bytes.len();
     let mut c = Cursor::new(contents_bytes);
-    io::copy(&mut c, &mut hashed_writer)?;
-
-    let hash_bytes = hashed_writer.hasher.finalize();
-    let tree_hash = hex::encode(hash_bytes);
-
-    let (dir_path, file_path) = objects::paths_from_sha(&tree_hash);
-
-    // // Source
-    let mut reader_tree_bytes = hashed_writer.writer.reader();
-
-    objects::write_byte_reader_to_file(&mut reader_tree_bytes, &dir_path, &file_path)?;
+    let (_file, tree_hash) = objects::build_hashed_file(&mut c, "tree", content_size, true)?;
 
     Ok(TreeEntry {
         mode: crate::TreeEntryMode::Directory,

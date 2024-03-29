@@ -1,11 +1,12 @@
-use crate::{Blob, Object, Tree, TreeEntry, TreeEntryMode};
+use crate::{Blob, HashedWriter, Object, Tree, TreeEntry, TreeEntryMode};
 use anyhow::Context;
 use bytes::Buf;
 use flate2::{bufread::ZlibDecoder, write::ZlibEncoder};
+use sha1::{Digest, Sha1};
 use std::{
     ffi::CStr,
     fs::{self, File},
-    io::{prelude::*, BufReader, Cursor},
+    io::{self, prelude::*, BufReader, Cursor},
     path::{Path, PathBuf},
 };
 
@@ -113,25 +114,49 @@ pub fn read_object_from_file(file_path: &Path) -> anyhow::Result<Object> {
     Ok(result)
 }
 
-pub fn write_byte_reader_to_file<R: ?Sized>(
+pub fn build_hashed_file<R: ?Sized>(
     reader: &mut R,
-    dir_path: &Path,
-    file_path: &Path,
-) -> anyhow::Result<File>
+    content_type: &str,
+    content_size: usize,
+    write_to_disk: bool,
+) -> anyhow::Result<(Option<File>, String)>
 where
     R: Read,
 {
+    let written_bytes = Vec::new();
+
+    let mut hashed_writer = HashedWriter {
+        hasher: Sha1::new(),
+        writer: written_bytes,
+    };
+
+    write!(&mut hashed_writer, "{} {}\0", content_type, content_size)?;
+
+    // let mut c = Cursor::new(contents_bytes);
+    io::copy(reader, &mut hashed_writer)?;
+
+    let hash_bytes = hashed_writer.hasher.finalize();
+    let hash_str = hex::encode(hash_bytes);
+
+    let mut reader_bytes = hashed_writer.writer.reader();
+
+    let (dir_path, file_path) = paths_from_sha(&hash_str);
+
     // Destination
     let compressed_tmp_file = tempfile::NamedTempFile::new()?;
 
     fs::create_dir_all(dir_path).expect("Failed to create objects dir.");
 
     let mut compressor = ZlibEncoder::new(&compressed_tmp_file, Default::default());
-    std::io::copy(reader, &mut compressor)?;
+    std::io::copy(&mut reader_bytes, &mut compressor)?;
     compressor.finish().expect("Zlib compression failed.");
 
     // Atomically replace file in object store with tmp file once it's fully written.
-    let written_file = compressed_tmp_file.persist(file_path)?;
+    let written_file = if write_to_disk {
+        Some(compressed_tmp_file.persist(file_path)?)
+    } else {
+        None
+    };
 
-    Ok(written_file)
+    Ok((written_file, hash_str))
 }
