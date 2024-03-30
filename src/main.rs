@@ -67,6 +67,15 @@ enum Commands {
         /// TODO
         tree_sha: String,
     },
+
+    /// TODO
+    Clone {
+        /// TODO
+        remote_url: String,
+
+        /// TODO
+        target_directory: String,
+    },
 }
 
 #[derive(Parser)]
@@ -130,7 +139,8 @@ where
     }
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     // let path = env::current_dir().unwrap();
     // println!("The current directory is {}", path.display());
 
@@ -186,6 +196,15 @@ fn main() -> Result<()> {
                 let commit_hash = commit_tree::commit_tree(tree_sha, parent_sha, message)?;
 
                 println!("{}", commit_hash);
+            }
+
+            Commands::Clone {
+                remote_url,
+                target_directory,
+            } => {
+                println!("remote_url: {remote_url}, target_directory: {target_directory}");
+
+                clone::clone(remote_url, target_directory).await?;
             }
         }
     }

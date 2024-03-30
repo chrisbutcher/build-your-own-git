@@ -27,3 +27,4 @@ thiserror = "1.0.32"                                               # error handl
 ## Added
 tempfile = "3.10.1"
 walkdir = "2"
+itertools = "0.12.1"
