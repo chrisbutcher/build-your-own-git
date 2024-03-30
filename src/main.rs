@@ -51,7 +51,22 @@ enum Commands {
         tree_sha: String,
     },
 
+    /// TODO
     WriteTree,
+
+    /// TODO
+    CommitTree {
+        #[clap(short, long)]
+        /// TODO
+        parent_sha: Option<String>,
+
+        #[clap(short, long)]
+        /// TODO
+        message: String,
+
+        /// TODO
+        tree_sha: String,
+    },
 }
 
 #[derive(Parser)]
@@ -161,6 +176,16 @@ fn main() -> Result<()> {
             Commands::WriteTree => {
                 let tree_entry = write_tree::write_tree()?;
                 println!("{}", tree_entry.object_sha);
+            }
+
+            Commands::CommitTree {
+                tree_sha,
+                parent_sha,
+                message,
+            } => {
+                let commit_hash = commit_tree::commit_tree(tree_sha, parent_sha, message)?;
+
+                println!("{}", commit_hash);
             }
         }
     }
