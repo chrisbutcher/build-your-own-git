@@ -1,7 +1,6 @@
 use itertools::Itertools;
-use std::fs;
 
-pub async fn clone(remote_url: String, target_directory: String) -> anyhow::Result<()> {
+pub async fn clone(remote_url: String, _target_directory: String) -> anyhow::Result<()> {
     let remote_url = format!("{remote_url}.git");
 
     let mut url_with_params = reqwest::Url::parse(&remote_url)?;
@@ -15,7 +14,7 @@ pub async fn clone(remote_url: String, target_directory: String) -> anyhow::Resu
     }
 
     let response_raw = reqwest::get(url_with_params.clone()).await?.text().await?;
-    let response_lines = response_raw.split("\n").collect_vec();
+    let response_lines = response_raw.split('\n').collect_vec();
 
     for line in &response_lines {
         println!("{:?}", &line);
